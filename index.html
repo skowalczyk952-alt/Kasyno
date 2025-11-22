@@ -1116,18 +1116,26 @@
                 });
 
                 // Spin animation
-                const reels = [
-                    { el: document.getElementById('reel1'), delay: 0 },
-                    { el: document.getElementById('reel2'), delay: 500 },
-                    { el: document.getElementById('reel3'), delay: 1000 }
-                ];
+const reels = [
+    document.getElementById('reel1'),
+    document.getElementById('reel2'),
+    document.getElementById('reel3')
+];
 
-                const results = [];
+// Wszystkie kręcą się jednocześnie
+reels.forEach(reel => reel.classList.add('spinning'));
 
-                for (let i = 0; i < reels.length; i++) {
-                    await new Promise(resolve => setTimeout(resolve, reels[i].delay));
+const spinTime = Math.random() * 1500 + 500;
+await new Promise(resolve => setTimeout(resolve, spinTime));
 
-                    const reel = reels[i].el;
+reels.forEach(reel => reel.classList.remove('spinning'));
+
+const results = [];
+for (let i = 0; i < reels.length; i++) {
+    const result = Math.floor(Math.random() * slotIcons.length);
+    results.push(result);
+    reels[i].textContent = slotIcons[result];
+        }
                     reel.classList.add('spinning');
 
                     // Spin for 0.5-2 seconds
