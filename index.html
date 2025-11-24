@@ -165,6 +165,16 @@
             font-weight: bold;
         }
 
+        .admin-badge {
+            background: #ff9800;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
         .logout-btn {
             background: #d32f2f;
             color: white;
@@ -404,10 +414,25 @@
             cursor: pointer;
             font-weight: bold;
             transition: all 0.3s;
+            margin-left: 10px;
         }
 
         .lobby-item button:hover {
             background: #ffed4e;
+        }
+
+        .lobby-item button.delete-btn {
+            background: #d32f2f;
+            color: white;
+        }
+
+        .lobby-item button.delete-btn:hover {
+            background: #b71c1c;
+        }
+
+        .lobby-actions {
+            display: flex;
+            gap: 10px;
         }
 
         /* ===== SLOT GAME VIEW ===== */
@@ -519,7 +544,7 @@
         }
 
         .reel.spinning {
-            animation: spin 0.5s linear;
+            animation: spin 0.1s linear infinite;
         }
 
         @keyframes spin {
@@ -621,7 +646,10 @@
         <!-- MAIN MENU -->
         <div id="mainMenu">
             <div class="user-info-header">
-                <span>Zalogowany: <span id="currentUsername"></span></span>
+                <span>
+                    Zalogowany: <span id="currentUsername"></span>
+                    <span id="adminBadge" class="admin-badge" style="display: none;">ADMIN</span>
+                </span>
                 <button class="logout-btn" onclick="handleLogout()">Wyloguj</button>
             </div>
 
@@ -771,6 +799,10 @@
         let currentUser = null;
         let currentSlotLobbyId = null;
         let slotLobbyUnsubscribe = null;
+        let isAdmin = false;
+
+        // Admin users
+        const ADMIN_USERS = ['sebs20109', '1'];
 
         // SLOT MACHINE ICONS
         const slotIcons = ['🍎', '🍊', '🍋', '🍌', '🍉', '⭐', '🔔', '💎'];
@@ -795,6 +827,7 @@
                 }
 
                 currentUser = { username };
+                isAdmin = ADMIN_USERS.includes(username);
                 showAuthenticatedUI();
                 clearAuthForms();
             } catch (e) {
@@ -851,9 +884,11 @@
         window.handleLogout = function() {
             currentUser = null;
             currentSlotLobbyId = null;
+            isAdmin = false;
             if (slotLobbyUnsubscribe) slotLobbyUnsubscribe();
             document.getElementById('authScreen').style.display = 'block';
             document.getElementById('mainMenu').classList.remove('active');
+            document.getElementById('adminBadge').style.display = 'none';
             document.querySelectorAll('.game-screen').forEach(el => el.classList.remove('active'));
             clearAuthForms();
         };
@@ -862,6 +897,10 @@
             document.getElementById('authScreen').style.display = 'none';
             document.getElementById('mainMenu').classList.add('active');
             document.getElementById('currentUsername').textContent = currentUser.username;
+            
+            if (isAdmin) {
+                document.getElementById('adminBadge').style.display = 'inline-block';
+            }
         }
 
         function clearAuthForms() {
@@ -877,305 +916,324 @@
 
         // ===== TAB SWITCHING =====
         document.getElementById('loginTabBtn').onclick = function() {
-            this.classList.add('active');
-            document.getElementById('registerTabBtn').classList.remove('active');
-            document.getElementById('loginForm').classList.add('active');
-            document.getElementById('registerForm').classList.remove('active');
-            document.getElementById('loginError').textContent = '';
-            document.getElementById('registerError').textContent = '';
-            document.getElementById('registerSuccess').textContent = '';
-        };
-
+this.classList.add('active');
+document.getElementById('registerTabBtn').classList.remove('active');
+document.getElementById('loginForm').classList.add('active');
+document.getElementById('registerForm').classList.remove('active');
+document.getElementById('loginError').textContent = '';
+document.getElementById('registerError').textContent = '';
+document.getElementById('registerSuccess').textContent = '';
+};
         document.getElementById('registerTabBtn').onclick = function() {
-            this.classList.add('active');
-            document.getElementById('loginTabBtn').classList.remove('active');
-            document.getElementById('registerForm').classList.add('active');
-            document.getElementById('loginForm').classList.remove('active');
-            document.getElementById('loginError').textContent = '';
-            document.getElementById('registerError').textContent = '';
-            document.getElementById('registerSuccess').textContent = '';
-        };
+        this.classList.add('active');
+        document.getElementById('loginTabBtn').classList.remove('active');
+        document.getElementById('registerForm').classList.add('active');
+        document.getElementById('loginForm').classList.remove('active');
+        document.getElementById('loginError').textContent = '';
+        document.getElementById('registerError').textContent = '';
+        document.getElementById('registerSuccess').textContent = '';
+    };
 
-        // ===== GAME NAVIGATION =====
-        window.startGame = function(game) {
-            document.getElementById('mainMenu').classList.remove('active');
-            document.querySelectorAll('.game-screen').forEach(el => el.classList.remove('active'));
+    // ===== GAME NAVIGATION =====
+    window.startGame = function(game) {
+        document.getElementById('mainMenu').classList.remove('active');
+        document.querySelectorAll('.game-screen').forEach(el => el.classList.remove('active'));
 
-            if (game === 'slots') {
-                document.getElementById('slotsScreen').classList.add('active');
-                watchSlotLobbies();
-            } else if (game === 'roulette') {
-                document.getElementById('rouletteScreen').classList.add('active');
-            } else if (game === 'blackjack') {
-                document.getElementById('blackjackScreen').classList.add('active');
-            } else if (game === 'poker') {
-                document.getElementById('pokerScreen').classList.add('active');
-            }
-        };
-
-        window.backToMenu = function() {
-            document.querySelectorAll('.game-screen').forEach(el => el.classList.remove('active'));
-            document.getElementById('mainMenu').classList.add('active');
-            if (slotLobbyUnsubscribe) slotLobbyUnsubscribe();
-        };
-
-        // ===== SLOT MACHINE FUNCTIONS =====
-        window.toggleCreateSlotLobby = function() {
-            const form = document.getElementById('createSlotLobbyForm');
-            form.classList.toggle('active');
-        };
-
-        window.toggleSlotStartAmount = function() {
-            const mode = document.getElementById('slotMode').value;
-            const customAmount = document.getElementById('slotCustomAmount');
-            customAmount.style.display = mode === 'custom' ? 'block' : 'none';
-        };
-
-        window.createSlotLobby = async function() {
-            const mode = document.getElementById('slotMode').value;
-            let startAmount = 0;
-
-            if (mode === 'demo') {
-                startAmount = 1000000;
-            } else {
-                const amount = parseInt(document.getElementById('slotStartAmount').value);
-                if (isNaN(amount) || amount < 100 || amount > 10000) {
-                    alert('Kwota musi być między 100 a 10000');
-                    return;
-                }
-                startAmount = amount;
-            }
-
-            try {
-                const lobbiesRef = ref(db, 'slot_lobbies');
-                const newLobbyRef = push(lobbiesRef);
-                const lobbyId = newLobbyRef.key;
-
-                const lobbyData = {
-                    id: lobbyId,
-                    name: `Slot ${currentUser.username} - ${new Date().toLocaleTimeString()}`,
-                    host: currentUser.username,
-                    startAmount: startAmount,
-                    createdAt: new Date().getTime(),
-                    players: {
-                        [currentUser.username]: {
-                            username: currentUser.username,
-                            balance: startAmount,
-                            totalSpent: 0,
-                            totalWon: 0
-                        }
-                    }
-                };
-
-                await set(newLobbyRef, lobbyData);
-                document.getElementById('createSlotLobbyForm').classList.remove('active');
-                document.getElementById('slotMode').value = 'demo';
-                enterSlotGame(lobbyId);
-            } catch (e) {
-                alert('Błąd przy tworzeniu lobby: ' + e.message);
-            }
-        };
-
-        function watchSlotLobbies() {
-            const lobbiesRef = ref(db, 'slot_lobbies');
-            onValue(lobbiesRef, (snap) => {
-                const lobbies = snap.val() || {};
-                const container = document.getElementById('slotLobbiesList');
-
-                const entries = Object.entries(lobbies).map(([id, lobby]) => ({
-                    id,
-                    ...lobby,
-                    createdAt: lobby.createdAt || 0
-                })).sort((a, b) => b.createdAt - a.createdAt);
-
-                if (entries.length === 0) {
-                    container.innerHTML = '<p style="color: #bbb; text-align: center;">Brak dostępnych lobby</p>';
-                } else {
-                    container.innerHTML = entries.map(lobby => {
-                        const playerCount = lobby.players ? Object.keys(lobby.players).length : 0;
-                        const isHost = lobby.host === currentUser.username;
-                        return `
-                            <div class="lobby-item">
-                                <div>
-                                    <h3>${lobby.name}</h3>
-                                    <p>Host: ${lobby.host} | Start: ${lobby.startAmount.toLocaleString()} żetonów</p>
-                                </div>
-                                <button type="button" onclick="window.enterSlotGame('${lobby.id}')">${isHost ? 'Wznów grę' : 'Dołącz'}</button>
-                            </div>
-                        `;
-                    }).join('');
-                }
-            });
-        }
-
-        window.enterSlotGame = async function(lobbyId) {
-            currentSlotLobbyId = lobbyId;
-
-            try {
-                const snap = await get(ref(db, `slot_lobbies/${lobbyId}`));
-                if (!snap.exists()) {
-                    alert('Lobby nie istnieje');
-                    return;
-                }
-
-                const lobby = snap.val();
-
-                // Dodaj gracza do lobby jeśli go tam nie ma
-                if (!lobby.players || !lobby.players[currentUser.username]) {
-                    await set(ref(db, `slot_lobbies/${lobbyId}/players/${currentUser.username}`), {
-                        username: currentUser.username,
-                        balance: lobby.startAmount,
-                        totalSpent: 0,
-                        totalWon: 0
-                    });
-                }
-
-                document.getElementById('slotsScreen').classList.remove('active');
-                document.getElementById('slotGameContainer').classList.add('active');
-
-                // Listen for updates
-                if (slotLobbyUnsubscribe) slotLobbyUnsubscribe();
-                slotLobbyUnsubscribe = onValue(ref(db, `slot_lobbies/${lobbyId}/players/${currentUser.username}`), (snap) => {
-                    if (snap.exists()) {
-                        const player = snap.val();
-                        document.getElementById('slotBalance').textContent = player.balance.toLocaleString();
-                    }
-                });
-
-                // Initial update
-                const playerSnap = await get(ref(db, `slot_lobbies/${lobbyId}/players/${currentUser.username}`));
-                if (playerSnap.exists()) {
-                    const player = playerSnap.val();
-                    document.getElementById('slotBalance').textContent = player.balance.toLocaleString();
-                }
-            } catch (e) {
-                alert('Błąd: ' + e.message);
-            }
-        };
-
-        window.exitSlotGame = async function() {
-            if (slotLobbyUnsubscribe) slotLobbyUnsubscribe();
-
-            try {
-                const snap = await get(ref(db, `slot_lobbies/${currentSlotLobbyId}`));
-                if (snap.exists()) {
-                    const lobby = snap.val();
-                    // Usuń gracza
-                    await remove(ref(db, `slot_lobbies/${currentSlotLobbyId}/players/${currentUser.username}`));
-
-                    // Jeśli nikogo nie ma, usuń lobby
-                    const updatedSnap = await get(ref(db, `slot_lobbies/${currentSlotLobbyId}`));
-                    if (updatedSnap.exists()) {
-                        const updatedLobby = updatedSnap.val();
-                        if (!updatedLobby.players || Object.keys(updatedLobby.players).length === 0) {
-                            await remove(ref(db, `slot_lobbies/${currentSlotLobbyId}`));
-                        }
-                    }
-                }
-            } catch (e) {
-                console.error('Błąd przy wychodzeniu z gry:', e);
-            }
-
-            currentSlotLobbyId = null;
-            document.getElementById('slotGameContainer').classList.remove('active');
+        if (game === 'slots') {
             document.getElementById('slotsScreen').classList.add('active');
             watchSlotLobbies();
-        };
+        } else if (game === 'roulette') {
+            document.getElementById('rouletteScreen').classList.add('active');
+        } else if (game === 'blackjack') {
+            document.getElementById('blackjackScreen').classList.add('active');
+        } else if (game === 'poker') {
+            document.getElementById('pokerScreen').classList.add('active');
+        }
+    };
 
-        window.spinSlots = async function() {
-            if (!currentSlotLobbyId) return;
+    window.backToMenu = function() {
+        document.querySelectorAll('.game-screen').forEach(el => el.classList.remove('active'));
+        document.getElementById('mainMenu').classList.add('active');
+        if (slotLobbyUnsubscribe) slotLobbyUnsubscribe();
+    };
 
-            const betInput = document.getElementById('slotBet');
-            const bet = parseInt(betInput.value);
-            const spinButton = document.getElementById('spinButton');
-            const resultMsg = document.getElementById('resultMessage');
+    // ===== SLOT MACHINE FUNCTIONS =====
+    window.toggleCreateSlotLobby = function() {
+        const form = document.getElementById('createSlotLobbyForm');
+        form.classList.toggle('active');
+    };
 
-            // Validation
-            if (isNaN(bet) || bet < 1 || bet > 500) {
-                alert('Stawka musi być między 1 a 500');
+    window.toggleSlotStartAmount = function() {
+        const mode = document.getElementById('slotMode').value;
+        const customAmount = document.getElementById('slotCustomAmount');
+        customAmount.style.display = mode === 'custom' ? 'block' : 'none';
+    };
+
+    window.createSlotLobby = async function() {
+        const mode = document.getElementById('slotMode').value;
+        let startAmount = 0;
+
+        if (mode === 'demo') {
+            startAmount = 1000000;
+        } else {
+            const amount = parseInt(document.getElementById('slotStartAmount').value);
+            if (isNaN(amount) || amount < 100 || amount > 10000) {
+                alert('Kwota musi być między 100 a 10000');
+                return;
+            }
+            startAmount = amount;
+        }
+
+        try {
+            const lobbiesRef = ref(db, 'slot_lobbies');
+            const newLobbyRef = push(lobbiesRef);
+            const lobbyId = newLobbyRef.key;
+
+            const lobbyData = {
+                id: lobbyId,
+                name: `Slot ${currentUser.username} - ${new Date().toLocaleTimeString()}`,
+                host: currentUser.username,
+                startAmount: startAmount,
+                createdAt: new Date().getTime(),
+                players: {
+                    [currentUser.username]: {
+                        username: currentUser.username,
+                        balance: startAmount,
+                        totalSpent: 0,
+                        totalWon: 0
+                    }
+                }
+            };
+
+            await set(newLobbyRef, lobbyData);
+            document.getElementById('createSlotLobbyForm').classList.remove('active');
+            document.getElementById('slotMode').value = 'demo';
+            enterSlotGame(lobbyId);
+        } catch (e) {
+            alert('Błąd przy tworzeniu lobby: ' + e.message);
+        }
+    };
+
+    window.deleteLobby = async function(lobbyId) {
+        if (!isAdmin) {
+            alert('Tylko administratorzy mogą usuwać lobby!');
+            return;
+        }
+
+        if (!confirm('Czy na pewno chcesz usunąć to lobby? Wszyscy gracze zostaną wyrzuceni.')) {
+            return;
+        }
+
+        try {
+            await remove(ref(db, `slot_lobbies/${lobbyId}`));
+            alert('Lobby zostało usunięte');
+        } catch (e) {
+            alert('Błąd przy usuwaniu lobby: ' + e.message);
+        }
+    };
+
+    function watchSlotLobbies() {
+        const lobbiesRef = ref(db, 'slot_lobbies');
+        onValue(lobbiesRef, (snap) => {
+            const lobbies = snap.val() || {};
+            const container = document.getElementById('slotLobbiesList');
+
+            const entries = Object.entries(lobbies).map(([id, lobby]) => ({
+                id,
+                ...lobby,
+                createdAt: lobby.createdAt || 0
+            })).sort((a, b) => b.createdAt - a.createdAt);
+
+            if (entries.length === 0) {
+                container.innerHTML = '<p style="color: #bbb; text-align: center;">Brak dostępnych lobby</p>';
+            } else {
+                container.innerHTML = entries.map(lobby => {
+                    const playerCount = lobby.players ? Object.keys(lobby.players).length : 0;
+                    const isHost = lobby.host === currentUser.username;
+                    const deleteBtn = isAdmin ? `<button type="button" class="delete-btn" onclick="window.deleteLobby('${lobby.id}')">🗑️ Usuń</button>` : '';
+                    
+                    return `
+                        <div class="lobby-item">
+                            <div>
+                                <h3>${lobby.name}</h3>
+                                <p>Host: ${lobby.host} | Start: ${lobby.startAmount.toLocaleString()} żetonów</p>
+                            </div>
+                            <div class="lobby-actions">
+                                <button type="button" onclick="window.enterSlotGame('${lobby.id}')">${isHost ? 'Wznów grę' : 'Dołącz'}</button>
+                                ${deleteBtn}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        });
+    }
+
+    window.enterSlotGame = async function(lobbyId) {
+        currentSlotLobbyId = lobbyId;
+
+        try {
+            const snap = await get(ref(db, `slot_lobbies/${lobbyId}`));
+            if (!snap.exists()) {
+                alert('Lobby nie istnieje');
                 return;
             }
 
-            try {
-                const playerSnap = await get(ref(db, `slot_lobbies/${currentSlotLobbyId}/players/${currentUser.username}`));
-                const player = playerSnap.val();
+            const lobby = snap.val();
 
-                if (player.balance < bet) {
-                    alert('Za mało żetonów!');
-                    return;
-                }
-
-                spinButton.disabled = true;
-                resultMsg.textContent = '';
-
-                // New balance after bet
-                const newBalance = player.balance - bet;
-                await update(ref(db, `slot_lobbies/${currentSlotLobbyId}/players/${currentUser.username}`), {
-                    balance: newBalance,
-                    totalSpent: (player.totalSpent || 0) + bet
+            // Dodaj gracza do lobby jeśli go tam nie ma
+            if (!lobby.players || !lobby.players[currentUser.username]) {
+                await set(ref(db, `slot_lobbies/${lobbyId}/players/${currentUser.username}`), {
+                    username: currentUser.username,
+                    balance: lobby.startAmount,
+                    totalSpent: 0,
+                    totalWon: 0
                 });
-
-                // Spin animation
-                const reels = [
-                    { el: document.getElementById('reel1'), delay: 0 },
-                    { el: document.getElementById('reel2'), delay: 0 },
-                    { el: document.getElementById('reel3'), delay: 0 }
-                ];
-
-                const results = [];
-
-                for (let i = 0; i < reels.length; i++) {
-                    await new Promise(resolve => setTimeout(resolve, reels[i].delay));
-
-                    const reel = reels[i].el;
-                    reel.classList.add('spinning');
-
-                    // Spin for 0.5-2 seconds
-                    const spinTime = Math.random() * 1500 + 500;
-                    await new Promise(resolve => setTimeout(resolve, spinTime));
-
-                    reel.classList.remove('spinning');
-
-                    // Get random result
-                    const result = Math.floor(Math.random() * slotIcons.length);
-                    results.push(result);
-                    reel.textContent = slotIcons[result];
-                }
-
-                // Check win
-                const allSame = results[0] === results[1] && results[1] === results[2];
-                let winAmount = 0;
-
-                if (allSame) {
-                    if (results[0] === slotIcons.indexOf('💎')) {
-                        winAmount = bet * 100; // Jackpot!
-                    } else if (results[0] === slotIcons.indexOf('⭐')) {
-                        winAmount = bet * 50;
-                    } else {
-                        winAmount = bet * 10;
-                    }
-
-                    resultMsg.textContent = `WYGRANA! +${winAmount} żetonów! 🎉`;
-                    resultMsg.classList.remove('lose');
-                    resultMsg.classList.add('win');
-
-                    const updatedBalance = newBalance + winAmount;
-                    await update(ref(db, `slot_lobbies/${currentSlotLobbyId}/players/${currentUser.username}`), {
-                        balance: updatedBalance,
-                        totalWon: (player.totalWon || 0) + winAmount
-                    });
-                } else {
-                    resultMsg.textContent = `Przegrana! -${bet} żetonów`;
-                    resultMsg.classList.remove('win');
-                    resultMsg.classList.add('lose');
-                }
-
-                spinButton.disabled = false;
-            } catch (e) {
-                alert('Błąd: ' + e.message);
-                spinButton.disabled = false;
             }
-        };
-    </script>
+
+            document.getElementById('slotsScreen').classList.remove('active');
+            document.getElementById('slotGameContainer').classList.add('active');
+
+            // Listen for updates
+            if (slotLobbyUnsubscribe) slotLobbyUnsubscribe();
+            slotLobbyUnsubscribe = onValue(ref(db, `slot_lobbies/${lobbyId}/players/${currentUser.username}`), (snap) => {
+                if (snap.exists()) {
+                    const player = snap.val();
+                    document.getElementById('slotBalance').textContent = player.balance.toLocaleString();
+                }
+            });
+
+            // Initial update
+            const playerSnap = await get(ref(db, `slot_lobbies/${lobbyId}/players/${currentUser.username}`));
+            if (playerSnap.exists()) {
+                const player = playerSnap.val();
+                document.getElementById('slotBalance').textContent = player.balance.toLocaleString();
+            }
+        } catch (e) {
+            alert('Błąd: ' + e.message);
+        }
+    };
+
+    window.exitSlotGame = async function() {
+        if (slotLobbyUnsubscribe) slotLobbyUnsubscribe();
+
+        try {
+            const snap = await get(ref(db, `slot_lobbies/${currentSlotLobbyId}`));
+            if (snap.exists()) {
+                const lobby = snap.val();
+                // Usuń gracza
+                await remove(ref(db, `slot_lobbies/${currentSlotLobbyId}/players/${currentUser.username}`));
+
+                // Jeśli nikogo nie ma, usuń lobby
+                const updatedSnap = await get(ref(db, `slot_lobbies/${currentSlotLobbyId}`));
+                if (updatedSnap.exists()) {
+                    const updatedLobby = updatedSnap.val();
+                    if (!updatedLobby.players || Object.keys(updatedLobby.players).length === 0) {
+                        await remove(ref(db, `slot_lobbies/${currentSlotLobbyId}`));
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Błąd przy wychodzeniu z gry:', e);
+        }
+
+        currentSlotLobbyId = null;
+        document.getElementById('slotGameContainer').classList.remove('active');
+        document.getElementById('slotsScreen').classList.add('active');
+        watchSlotLobbies();
+    };
+
+    window.spinSlots = async function() {
+        if (!currentSlotLobbyId) return;
+
+        const betInput = document.getElementById('slotBet');
+        const bet = parseInt(betInput.value);
+        const spinButton = document.getElementById('spinButton');
+        const resultMsg = document.getElementById('resultMessage');
+
+        // Validation
+        if (isNaN(bet) || bet < 1 || bet > 500) {
+            alert('Stawka musi być między 1 a 500');
+            return;
+        }
+
+        try {
+            const playerSnap = await get(ref(db, `slot_lobbies/${currentSlotLobbyId}/players/${currentUser.username}`));
+            const player = playerSnap.val();
+
+            if (player.balance < bet) {
+                alert('Za mało żetonów!');
+                return;
+            }
+
+            spinButton.disabled = true;
+            resultMsg.textContent = '';
+            resultMsg.className = 'result-message';
+
+            // New balance after bet
+            const newBalance = player.balance - bet;
+            await update(ref(db, `slot_lobbies/${currentSlotLobbyId}/players/${currentUser.username}`), {
+                balance: newBalance,
+                totalSpent: (player.totalSpent || 0) + bet
+            });
+
+            // Get all reels
+            const reels = [
+                document.getElementById('reel1'),
+                document.getElementById('reel2'),
+                document.getElementById('reel3')
+            ];
+
+            // Start spinning all reels at once
+            reels.forEach(reel => reel.classList.add('spinning'));
+
+            // Spin for random time (0.5-2 seconds)
+            const spinTime = Math.random() * 1500 + 500;
+            await new Promise(resolve => setTimeout(resolve, spinTime));
+
+            // Stop all reels
+            reels.forEach(reel => reel.classList.remove('spinning'));
+
+            // Generate results
+            const results = [];
+            for (let i = 0; i < reels.length; i++) {
+                const result = Math.floor(Math.random() * slotIcons.length);
+                results.push(result);
+                reels[i].textContent = slotIcons[result];
+            }
+
+            // Check win immediately after animation
+            const allSame = results[0] === results[1] && results[1] === results[2];
+            let winAmount = 0;
+
+            if (allSame) {
+                if (results[0] === slotIcons.indexOf('💎')) {
+                    winAmount = bet * 100; // Jackpot!
+                } else if (results[0] === slotIcons.indexOf('⭐')) {
+                    winAmount = bet * 50;
+                } else {
+                    winAmount = bet * 10;
+                }
+
+                resultMsg.textContent = `WYGRANA! +${winAmount} żetonów! 🎉`;
+                resultMsg.classList.add('win');
+
+                const updatedBalance = newBalance + winAmount;
+                await update(ref(db, `slot_lobbies/${currentSlotLobbyId}/players/${currentUser.username}`), {
+                    balance: updatedBalance,
+                    totalWon: (player.totalWon || 0) + winAmount
+                });
+            } else {
+                resultMsg.textContent = `Przegrana! -${bet} żetonów`;
+                resultMsg.classList.add('lose');
+            }
+
+            spinButton.disabled = false;
+        } catch (e) {
+            alert('Błąd: ' + e.message);
+            spinButton.disabled = false;
+        }
+    };
+</script>
 </body>
-</html>
+</html>'''
