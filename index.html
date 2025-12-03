@@ -721,7 +721,7 @@
         <!-- SLOT GAME VIEW -->
         <div id="slotGameContainer" class="slot-game-container">
             <div class="game-header">
-                <h1>🎰 Slot Machine - Gra</h1>
+                <h1>🎰 Slot Machine</h1>
                 <button class="back-btn" onclick="exitSlotGame()">← Wróć do lobby</button>
             </div>
 
@@ -1188,7 +1188,7 @@ document.getElementById('registerSuccess').textContent = '';
             reels.forEach(reel => reel.classList.add('spinning'));
 
             // Spin for random time (0.5-2 seconds)
-            const spinTime = Math.random() * 1500 + 500;
+            const spinTime = Math.random() * 500 + 500;
             await new Promise(resolve => setTimeout(resolve, spinTime));
 
             // Stop all reels
